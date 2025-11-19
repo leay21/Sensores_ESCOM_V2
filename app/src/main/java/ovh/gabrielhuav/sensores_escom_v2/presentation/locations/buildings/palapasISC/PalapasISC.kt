@@ -106,23 +106,21 @@ class PalapasISC : AppCompatActivity(),
             finish()
         }
     }
+    // Función auxiliar para saber si es de noche
+    private fun isNightTime(): Boolean {
+        val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        // Es noche si es antes de las 6 AM o después de las 7 PM
+        return currentHour < 6 || currentHour >= 19
+        //return true
+    }
     private fun checkDayNightCycle() {
         val overlay = findViewById<android.view.View>(R.id.nightOverlay)
-
-        // Obtener hora actual (0-23)
-        val calendar = java.util.Calendar.getInstance()
-        val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
-
-        // Definir "Noche": Antes de las 6 AM o después de las 7 PM
-        val isNight = currentHour < 6 || currentHour >= 19
-        //val isNight = true
-
-        if (isNight) {
-            // Es de noche: Oscurecer la pantalla (40% opacidad negra)
+        // Usamos la misma función que el audio para ser consistentes
+        if (isNightTime()) {
             overlay.alpha = 0.4f
-            Toast.makeText(this, "Es de noche en las Palapas... Shhh 🤫", Toast.LENGTH_SHORT).show()
+            // Mensaje opcional, puedes quitarlo si molesta
+            // Toast.makeText(this, "Modo Noche Activo 🌙", Toast.LENGTH_SHORT).show()
         } else {
-            // Es de día: Totalmente transparente
             overlay.alpha = 0.0f
         }
     }
@@ -532,12 +530,17 @@ class PalapasISC : AppCompatActivity(),
         bluetoothManager.reconnect()
         movementManager.setPosition(gameState.playerPosition)
         updateRemotePlayersOnMap()
-        // Lógica de Audio
+        // LÓGICA DE AUDIO DINÁMICO
         try {
             if (mediaPlayer == null) {
-                mediaPlayer = android.media.MediaPlayer.create(this, R.raw.ambiente_palapas)
-                mediaPlayer?.isLooping = true // Repetir infinitamente
-                mediaPlayer?.setVolume(0.5f, 0.5f) // Volumen al 50% para no molestar
+                val soundResource = if (isNightTime()) {
+                    R.raw.ambiente_noche
+                } else {
+                    R.raw.ambiente_dia
+                }
+                mediaPlayer = android.media.MediaPlayer.create(this, soundResource)
+                mediaPlayer?.isLooping = true
+                mediaPlayer?.setVolume(0.5f, 0.5f)
                 mediaPlayer?.start()
             } else {
                 if (!mediaPlayer!!.isPlaying) {
@@ -547,6 +550,7 @@ class PalapasISC : AppCompatActivity(),
         } catch (e: Exception) {
             Log.e("PalapasAudio", "Error: ${e.message}")
         }
+        checkDayNightCycle()
     }
 
     override fun onDestroy() {
