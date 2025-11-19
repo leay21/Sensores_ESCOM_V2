@@ -43,6 +43,7 @@ class PalapasISC : AppCompatActivity(),
     private lateinit var bluetoothBridge: BluetoothWebSocketBridge
 
     private var gameState = GameState()
+    private var mediaPlayer: android.media.MediaPlayer? = null
 
     data class GameState(
         var isServer: Boolean = false,
@@ -70,6 +71,8 @@ class PalapasISC : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_palapas_isc)
+        // 3. LLAMAR A LA FUNCIÓN DE DÍA/NOCHE
+        checkDayNightCycle()
 
         try {
             // Primero inicializamos el mapView
@@ -101,6 +104,26 @@ class PalapasISC : AppCompatActivity(),
             Log.e(TAG, "Error en onCreate: ${e.message}")
             Toast.makeText(this, "Error inicializando la actividad.", Toast.LENGTH_LONG).show()
             finish()
+        }
+    }
+    private fun checkDayNightCycle() {
+        val overlay = findViewById<android.view.View>(R.id.nightOverlay)
+
+        // Obtener hora actual (0-23)
+        val calendar = java.util.Calendar.getInstance()
+        val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+
+        // Definir "Noche": Antes de las 6 AM o después de las 7 PM
+        val isNight = currentHour < 6 || currentHour >= 19
+        //val isNight = true
+
+        if (isNight) {
+            // Es de noche: Oscurecer la pantalla (40% opacidad negra)
+            overlay.alpha = 0.4f
+            Toast.makeText(this, "Es de noche en las Palapas... Shhh 🤫", Toast.LENGTH_SHORT).show()
+        } else {
+            // Es de día: Totalmente transparente
+            overlay.alpha = 0.0f
         }
     }
 
@@ -509,16 +532,38 @@ class PalapasISC : AppCompatActivity(),
         bluetoothManager.reconnect()
         movementManager.setPosition(gameState.playerPosition)
         updateRemotePlayersOnMap()
+        // Lógica de Audio
+        try {
+            if (mediaPlayer == null) {
+                mediaPlayer = android.media.MediaPlayer.create(this, R.raw.ambiente_palapas)
+                mediaPlayer?.isLooping = true // Repetir infinitamente
+                mediaPlayer?.setVolume(0.5f, 0.5f) // Volumen al 50% para no molestar
+                mediaPlayer?.start()
+            } else {
+                if (!mediaPlayer!!.isPlaying) {
+                    mediaPlayer?.start()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PalapasAudio", "Error: ${e.message}")
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         bluetoothManager.cleanup()
+        // Liberar memoria
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     override fun onPause() {
         super.onPause()
         movementManager.stopMovement()
+        // Detener audio si sales de la app
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+        }
     }
 
 

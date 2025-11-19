@@ -176,5 +176,13 @@
                 android:contentDescription="Button Server"
                 android:layout_marginStart="8dp"/>
         </LinearLayout>
+        <View
+            android:id="@+id/nightOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000000"
+            android:alpha="0.0"
+            android:clickable="false"
+            android:focusable="false" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
